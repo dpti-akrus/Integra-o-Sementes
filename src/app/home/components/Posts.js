@@ -2,52 +2,75 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function Posts() {
-
   const [posts, setPosts] = useState([]);
 
   useEffect(() => {
-    getPosts()
+    getPosts();
   }, []);
 
   async function getPosts() {
     try {
-      const { data } = await (await fetch(`https://graph.instagram.com/me/media?access_token=${process.env.NEXT_PUBLIC_INSTA_TOKEN}&fields=media_url,permalink,media_type`))
-        .json()
-      setPosts(data?.filter(el => el.media_type == 'IMAGE') || [])
-    } catch (e) {
-      await fetch(`https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${process.env.NEXT_PUBLIC_INSTA_TOKEN}`)
-      getPosts()
+      const response = await fetch("/api/instagram");
+
+      if (!response.ok) {
+        throw new Error("Erro ao buscar posts do Instagram");
+      }
+
+      const result = await response.json();
+
+      setPosts(result.data || []);
+    } catch (error) {
+      console.error("Erro ao carregar Instagram:", error);
+      setPosts([]);
     }
   }
 
   return (
-    <>
-      <div className="px-10 pt-0 pb-12 md:px-40 md:py-24 bg-customGreen1">
-        <h1 className='font-openSans font-bold text-xl md:text-4xl text-[#354D4D] md:pb-4'>Últimas Postagens</h1>
-        <div className="flex justify-center">
-          <div className="grid grid-cols-2 md:grid-cols-3 grid-rows-2 gap-1 justify-center items-center">
-            <Link target="_blank" href={posts[0]?.permalink || 'https://instagram.com/integracaosementes'} className="flex items-center justify-center">
-              <img width={400} height={400} src={posts[0]?.media_url || "/imgs/integracao/posts-grid.svg"} className="" />
-            </Link>
-            <Link target="_blank" href={posts[1]?.permalink || 'https://instagram.com/integracaosementes'} className="flex items-center justify-center">
-              <img width={400} height={400} src={posts[1]?.media_url || "/imgs/integracao/posts-grid.svg"} className="" />
-            </Link>
-            <Link target="_blank" href={posts[2]?.permalink || 'https://instagram.com/integracaosementes'} className="flex items-center justify-center">
-              <img width={400} height={400} src={posts[2]?.media_url || "/imgs/integracao/posts-grid.svg"} className="" />
-            </Link>
-            <Link target="_blank" href={posts[3]?.permalink || 'https://instagram.com/integracaosementes'} className="flex items-center justify-center">
-              <img width={400} height={400} src={posts[3]?.media_url || "/imgs/integracao/posts-grid.svg"} className="" />
-            </Link>
-            {/* As duas divs abaixo só serão exibidas em telas médias ou maiores */}
-            <Link target="_blank" href={posts[4]?.permalink || 'https://instagram.com/integracaosementes'} className="hidden md:flex items-center justify-center">
-              <img width={400} height={400} src={posts[4]?.media_url || "/imgs/integracao/posts-grid.svg"} className="" />
-            </Link>
-            <Link target="_blank" href={posts[5]?.permalink || 'https://instagram.com/integracaosementes'} className="hidden md:flex items-center justify-center">
-              <img width={400} height={400} src={posts[5]?.media_url || "/imgs/integracao/posts-grid.svg"} className="" />
-            </Link>
-          </div>
+    <div className="px-10 pt-0 pb-12 md:px-40 md:py-24 bg-customGreen1">
+      <h1 className="font-openSans font-bold text-xl md:text-4xl text-[#354D4D] md:pb-4">
+        Últimas Postagens
+      </h1>
+
+      <div className="flex justify-center">
+        <div className="grid grid-cols-2 md:grid-cols-3 grid-rows-2 gap-1 justify-center items-center">
+          {[0, 1, 2, 3, 4, 5].map((index) => {
+            const post = posts[index];
+
+            const imageUrl =
+              post?.media_type === "VIDEO"
+                ? post?.thumbnail_url
+                : post?.media_url;
+
+            return (
+              <Link
+                key={post?.id || index}
+                target="_blank"
+                href={
+                  post?.permalink ||
+                  "https://www.instagram.com/integracaosementes/"
+                }
+                className={
+                  index >= 4
+                    ? "hidden md:flex items-center justify-center"
+                    : "flex items-center justify-center"
+                }
+              >
+                <img
+                  width={400}
+                  height={400}
+                  src={
+                    imageUrl ||
+                    "/imgs/integracao/posts-grid.svg"
+                  }
+                  alt="Publicação do Instagram Integração Sementes"
+                  loading="lazy"
+                  className="w-[400px] h-[400px] object-cover"
+                />
+              </Link>
+            );
+          })}
         </div>
       </div>
-    </>
+    </div>
   );
 }
